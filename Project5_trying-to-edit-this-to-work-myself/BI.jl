@@ -19,9 +19,8 @@ Ny = 128
 Nz = 32   # number of gridpoints in the z-direction
 
 # Some timestepping parameters
-max_Δt = 10minutes # maximum allowable timestep 
-duration = 1day # The non-dimensional duration of the simulation
-@info duration
+max_Δt = 1hour # maximum allowable timestep 
+duration = 1days # The non-dimensional duration of the simulation
 
 # Set the Reynolds number (Re=Ul/ν)
 Re = 5000
@@ -35,8 +34,8 @@ S₀ = 25     # reference salinity
 T₀ = 25     # reference temperature
 N² = 1e-4  # vertical stratification due to temperature
 M² = 1e-6  # horizontal stratification due to salinity
-α = 1.7e-4  # coefficient of thermal expansion
-β = 7.6e-4  # coefficient of haline contraction
+α = 0.17/ρ₀  # coefficient of thermal expansion
+β = 0.76/ρ₀  # coefficient of haline contraction
 g = 9.81
 
 
@@ -57,16 +56,17 @@ model = NonhydrostaticModel(; grid,
                 tracers = (:T, :S),  # Set the name(s) of any tracers, here S is salinity and T is temperature
                buoyancy = SeawaterBuoyancy(equation_of_state=LinearEquationOfState(thermal_expansion=α, haline_contraction=β)), # this tells the model that b will act as the buoyancy (and influence momentum) 
                 closure = (ScalarDiffusivity(ν = 1 / Re, κ = 1 / Re)),  # set a constant kinematic viscosity and diffusivty, here just 1/Re since we are solving the non-dimensional equations 
-                coriolis = FPlane(f=1e-4)  # set coriolis parameter
+                coriolis = FPlane(f=f)  # set coriolis parameter
 )
 
 # Set initial conditions
 # start with linear front
-uᵢ(x, y, z) = -M²/f*(z+Lz)
+#uᵢ(x, y, z) = -M²/f*(z+Lz) + kick*randn()
+uᵢ(x, y, z) = M²/f*(z+Lz) + kick*randn()
 vᵢ(x, y, z) = kick * randn()
 wᵢ(x, y, z) = kick * randn()
-Tᵢ(x, y, z) = N²/g/ρ₀/α*z
-Sᵢ(x, y, z) = M²/g/ρ₀/β*y
+Tᵢ(x, y, z) = T₀ + N²/(g*α)*z
+Sᵢ(x, y, z) = S₀ + M²/(g*β)*y
 
 # Send the initial conditions to the model to initialize the variables
 set!(model, u = uᵢ, v = vᵢ, w = wᵢ, S = Sᵢ, T=Tᵢ)
@@ -77,7 +77,7 @@ simulation = Simulation(model, Δt = max_Δt, stop_time = duration)
 # ### The `TimeStepWizard`
 wizard = TimeStepWizard(cfl = 0.85, max_change = 1.1, max_Δt = max_Δt)
 simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(10))
-:w
+
 # ### A progress messenger
 start_time = time_ns()
 progress(sim) = @printf("i: % 6d, sim time: % 10s, wall time: % 10s, Δt: % 10s, CFL: %.2e\n",
@@ -102,7 +102,7 @@ T = model.tracers.T # extract the temperature
 filename = "BI"
 
 simulation.output_writers[:xy_slices] =
-    JLD2OutputWriter(model, (; ζ, S),
+    JLD2OutputWriter(model, (; u, v, w, T, S, ζ),
                           filename = filename * ".jld2",
                           indices = (:, :, 1),
                          schedule = TimeInterval(0.2),
@@ -114,4 +114,4 @@ nothing # hide
 run!(simulation)
 
 # After the simulation is different, plot the results and save a movie
-include("plot_BI.jl")
+include("plot_BI-john.jl")

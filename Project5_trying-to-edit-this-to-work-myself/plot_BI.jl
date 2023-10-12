@@ -1,7 +1,9 @@
 
 # This script reads in output from KH.jl, makes a plot, and saves an animation
 
-using Oceananigans, JLD2, Plots, Printf
+using Oceananigans, Oceananigans.Units, JLD2, Plots, Printf
+Lx = 100kilometers
+Ly = 300kilometers
 
 # Set the filename (without the extension)
 filename = "BI"
@@ -55,7 +57,7 @@ anim = @animate for (i, iter) in enumerate(iterations)
 
     t = file_xy["timeseries/t/$iter"];
 
-        ζ_xy_plot = heatmap(xζ, yζ, ζ_xz'; color = :thermal, xlabel = "x", ylabel = "y", aspect_ratio = :equal, xlims = (0, Lx), ylims = (0, Ly)); 
+        ζ_xy_plot = heatmap(xζ, yζ, ζ_xz'; color = :thermal, xlabel = "x", ylabel = "y", aspect_ratio = :equal, xlims = (0, Lx), ylims = (0, Ly),clims=(-3e-4,3e-4)); 
         S_xy_plot = heatmap(xS, yS, S_xz'; color = :thermal, xlabel = "x", ylabel = "y", aspect_ratio = :equal, xlims = (0, Lx), ylims = (0, Ly)); 
         #=b_xz_plot = heatmap(xb, zb, b_xz'; color = :thermal, xlabel = "x", ylabel = "z", aspect_ratio = :equal, xlims = (0, Lx), ylims = (0, Lz)); 
         ω_xz_plot = heatmap(xω, zω, ω_xz'; color = :thermal, xlabel = "x", ylabel = "z", aspect_ratio = :equal, xlims = (0, Lx), ylims = (0, Lz)); 
