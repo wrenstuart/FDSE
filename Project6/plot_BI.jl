@@ -2,10 +2,11 @@
 # This script reads in output from gravitycurrent.jl, makes a plot, and saves an animation
 
 using Oceananigans, Oceananigans.Units, JLD2, Plots, Printf
+# given f, simnum
 
 # Set the filename (without the extension)
-filename_xy = "BI"
-#filename_xz = "BI_xz"
+filename_xy = "Project6/BI_xy_$simnum"
+filename_xz = "Project6/BI_xz_$simnum"
 
 # Read in the first iteration.  We do this to load the grid
 # filename * ".jld2" concatenates the extension to the end of the filename
@@ -27,7 +28,7 @@ xζ, yζ, zζ = nodes(ζ_ic)
 
 ## Now, open the file with our data
 file_xy = jldopen(filename_xy * ".jld2")
-#file_xz = jldopen(filename_xz * ".jld2")
+file_xz = jldopen(filename_xz * ".jld2")
 
 ## Extract a vector of iterations
 iterations = parse.(Int, keys(file_xy["timeseries/t"]))
@@ -69,7 +70,7 @@ anim = @animate for (i, iter) in enumerate(iterations)
     iter == iterations[end] && close(file_xy)
 end
 
-#close(file_xz)
+close(file_xz)
 
 # Save the animation to a file
-mp4(anim, "BI.mp4", fps = 20) # hide
+mp4(anim, "Project6/BI_$simnum.mp4", fps = 20) # hide

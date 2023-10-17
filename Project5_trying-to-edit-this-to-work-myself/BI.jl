@@ -20,7 +20,7 @@ Nz = 32   # number of gridpoints in the z-direction
 
 # Some timestepping parameters
 max_Δt = 1hour # maximum allowable timestep 
-duration = 1days # The non-dimensional duration of the simulation
+duration = 10days # The non-dimensional duration of the simulation
 
 # Set the Reynolds number (Re=Ul/ν)
 Re = 5000
@@ -76,13 +76,13 @@ simulation = Simulation(model, Δt = max_Δt, stop_time = duration)
 
 # ### The `TimeStepWizard`
 wizard = TimeStepWizard(cfl = 0.85, max_change = 1.1, max_Δt = max_Δt)
-simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(10))
+simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(1))
 
 # ### A progress messenger
 start_time = time_ns()
 progress(sim) = @printf("i: % 6d, sim time: % 10s, wall time: % 10s, Δt: % 10s, CFL: %.2e\n",
                         sim.model.clock.iteration,
-                        sim.model.clock.time,
+                        prettytime(sim.model.clock.time),
                         prettytime(1e-9 * (time_ns() - start_time)),
                         sim.Δt,
                         AdvectiveCFL(sim.Δt)(sim.model))
@@ -105,7 +105,7 @@ simulation.output_writers[:xy_slices] =
     JLD2OutputWriter(model, (; u, v, w, T, S, ζ),
                           filename = filename * ".jld2",
                           indices = (:, :, 1),
-                         schedule = TimeInterval(0.2),
+                         schedule = TimeInterval(1hour),
                             overwrite_existing = true)
 
 nothing # hide
