@@ -4,6 +4,10 @@
 using Printf
 using Oceananigans
 using Oceananigans.Units
+#=M² = 1e-7
+N² = 1e-4
+f = 1e-4
+simnum = 12=#
 global M²
 global N²
 global f
@@ -19,7 +23,7 @@ Lz = 50   # size in the vertical (z) direction
 
 g = 9.81 # gravitational acceleration
 ρ₀ = 1020 # reference density
-α = 0.17/ρ₀   #  Thermal expansion coefficient (TODO: check factor of 1000)
+α = 0.17/ρ₀   #  Thermal expansion coefficient
 β = 0.76/ρ₀ # Haline contraction coefficient
 T₀ = 10 # Reference temperature (units = ᵒC) 
 S₀ = 20 # Reference salinity (units = g/kg)
@@ -29,12 +33,64 @@ Ri = N²*f^2/(M²^2)  # Richardson number, must be below 1 for symmetric instabi
 Lx = 2*pi*U/f*(2*(1+Ri)/5)^0.5*4  # choose domain size to fit 4 wavelengths of baroclinic instability
 k = 2*pi/(Lx/4) # wavenumber of instability
 
+
+
+
+
+
+
+#=
+
+
+
+Lx = Lx/10
+Ly = Ly/10
+
+
+
+
+=#
+
+
+
+
+
+
+
+
+
+
+
 # Some timestepping parameters
-max_Δt = 10hour # maximum allowable timestep 
-duration = (54/5)^0.5*(1+Ri)^0.5/f*20 # The non-dimensional duration of the simulation
+growth = (54/5)^0.5*(1+Ri)^0.5/f # maximum allowable timestep 
+max_Δt = growth/25
+duration = growth*10 # The non-dimensional duration of the simulation
 
 # Set the amplitude of the random perturbation (kick)
-kick = 0.01  # random velocty perturbation
+kick = U/5  # random velocty perturbation
+
+#u_bcs = FieldBoundaryConditions(top = FluxBoundaryCondition(0),
+#                                bottom = FluxBoundaryCondition(0))
+#w_bcs = FieldBoundaryConditions(east = FluxBoundaryCondition(0),
+#                                west = FluxBoundaryCondition(0))
+#=T_bcs = FieldBoundaryConditions(top = GradientBoundaryCondition(N²/(g*α)),
+                                bottom = GradientBoundaryCondition(N²/(g*α)),
+                                north = FluxBoundaryCondition(0),
+                                south = FluxBoundaryCondition(0))
+S_bcs = FieldBoundaryConditions(top = FluxBoundaryCondition(0),
+                                bottom = FluxBoundaryCondition(0),
+                                north = GradientBoundaryCondition(M²/(g*β)),
+                                south = GradientBoundaryCondition(M²/(g*β)))=#
+T_bcs = FieldBoundaryConditions(top = FluxBoundaryCondition(0),
+                                bottom = FluxBoundaryCondition(0),
+                                north = FluxBoundaryCondition(0),
+                                south = FluxBoundaryCondition(0))
+
+S_bcs = FieldBoundaryConditions(top = FluxBoundaryCondition(0),
+                                bottom = FluxBoundaryCondition(0),
+                                north = FluxBoundaryCondition(0),
+                                south = FluxBoundaryCondition(0))
+
 
 # construct a rectilinear grid using an inbuilt Oceananigans function
 # Here, the topology parameter sets the style of boundaries in the x, y, and z directions
@@ -46,6 +102,7 @@ model = NonhydrostaticModel(; grid,
               advection = UpwindBiasedFifthOrder(),  # Specify the advection scheme.  Another good choice is WENO() which is more accurate but slower
             timestepper = :RungeKutta3, # Set the timestepping scheme, here 3rd order Runge-Kutta
                 tracers = (:T, :S),  # Set the name(s) of any tracers, here b is buoyancy and c is a passive tracer (e.g. dye)
+    boundary_conditions = (T = T_bcs, S = S_bcs),
                buoyancy = SeawaterBuoyancy(equation_of_state=LinearEquationOfState(thermal_expansion=α, haline_contraction=β)), # this tells the model that b will act as the buoyancy (and influence momentum) 
                coriolis = coriolis = FPlane(f=f), # this line tells the mdoel not to include system rotation (no Coriolis acceleration)
 )
@@ -103,7 +160,7 @@ simulation.output_writers[:xz_slices] =
     JLD2OutputWriter(model, (; u, v, w, T, S, ζ),
                           filename = filename * ".jld2",
                           indices = (:, 1, :),
-                         schedule = TimeInterval(1hour),
+                         schedule = TimeInterval(max_Δt),
                             overwrite_existing = true)
 
 # If you are running in 3D, you could save an xy slice like this:                             
@@ -112,7 +169,7 @@ simulation.output_writers[:xy_slices] =
     JLD2OutputWriter(model, (; u, v, w, T, S, ζ),
                           filename = filename * ".jld2",
                           indices = (:,:,30),
-                        schedule = TimeInterval(1hour),
+                        schedule = TimeInterval(max_Δt),
                             overwrite_existing = true)
 
 nothing # hide

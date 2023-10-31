@@ -4,9 +4,10 @@
 using Oceananigans, Oceananigans.Units, JLD2, Plots, Printf
 # given f, simnum
 
+
 # Set the filename (without the extension)
-filename_xy = "Project6/BI_xy_$simnum"
 filename_xz = "Project6/BI_xz_$simnum"
+filename_xy = "Project6/BI_xy_$simnum"
 
 # Read in the first iteration.  We do this to load the grid
 # filename * ".jld2" concatenates the extension to the end of the filename
@@ -55,9 +56,9 @@ anim = @animate for (i, iter) in enumerate(iterations)
     # Save some variables to plot at the end
     t_save[i] = t # save the time
 
-        T_xy_plot = heatmap(xT/1kilometer, yT/1kilometer, T_xy'; color = :thermal, xlabel = "x (km)", ylabel = "y (km)", aspect_ratio = :equal);  
-        S_xy_plot = heatmap(xS/1kilometer, yS/1kilometer, S_xy'; color = :haline, xlabel = "x (km)", ylabel = "y (km)", aspect_ratio = :equal);  
-        ζ_xy_plot = heatmap(xζ/1kilometer, yζ/1kilometer, ζ_xy'/f; color = :balance, xlabel = "x (km)", ylabel = "y (km)", aspect_ratio = :equal, clims=(-3,3));  
+        T_xy_plot = heatmap(xT/1kilometer, yT/1kilometer, T_xy'; color = :thermal, xlabel = "x (km)", ylabel = "y (km)")#, aspect_ratio = :equal);  
+        S_xy_plot = heatmap(xS/1kilometer, yS/1kilometer, S_xy'; color = :haline, xlabel = "x (km)", ylabel = "y (km)")#, aspect_ratio = :equal);  
+        ζ_xy_plot = heatmap(xζ/1kilometer, yζ/1kilometer, ζ_xy'/f; color = :balance, xlabel = "x (km)", ylabel = "y (km)")#, aspect_ratio = :equal, clims=(-1.5,1.5));  
 
     T_title = @sprintf("Temperature");
     S_title = @sprintf("Salinity");
@@ -71,6 +72,7 @@ anim = @animate for (i, iter) in enumerate(iterations)
 end
 
 close(file_xz)
+close(file_xy)
 
 # Save the animation to a file
 mp4(anim, "Project6/BI_$simnum.mp4", fps = 20) # hide
