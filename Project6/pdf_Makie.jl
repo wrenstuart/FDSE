@@ -5,7 +5,7 @@ using Oceananigans, JLD2, CairoMakie, Printf
 CairoMakie.activate!()
 
 # Set the filename (without the extension)
-filename = "Project6/BI_xy_10"
+filename = "Project6/BI_xy_11"
 
 # Read in the first iteration.  We do this to load the grid
 # filename * ".jld2" concatenates the extension to the end of the filename

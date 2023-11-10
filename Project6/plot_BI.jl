@@ -56,9 +56,9 @@ anim = @animate for (i, iter) in enumerate(iterations)
     # Save some variables to plot at the end
     t_save[i] = t # save the time
 
-        T_xy_plot = heatmap(xT/1kilometer, yT/1kilometer, T_xy'; color = :thermal, xlabel = "x (km)", ylabel = "y (km)")#, aspect_ratio = :equal);  
-        S_xy_plot = heatmap(xS/1kilometer, yS/1kilometer, S_xy'; color = :haline, xlabel = "x (km)", ylabel = "y (km)")#, aspect_ratio = :equal);  
-        ζ_xy_plot = heatmap(xζ/1kilometer, yζ/1kilometer, ζ_xy'/f; color = :balance, xlabel = "x (km)", ylabel = "y (km)")#, aspect_ratio = :equal, clims=(-1.5,1.5));  
+        T_xy_plot = heatmap(xT/1kilometer, yT/1kilometer, T_xy'; color = :thermal, xlabel = "x (km)", ylabel = "y (km)", aspect_ratio = :equal);  
+        S_xy_plot = heatmap(xS/1kilometer, yS/1kilometer, S_xy'; color = :haline, xlabel = "x (km)", ylabel = "y (km)", aspect_ratio = :equal);  
+        ζ_xy_plot = heatmap(xζ/1kilometer, yζ/1kilometer, ζ_xy'/f; color = :balance, xlabel = "x (km)", ylabel = "y (km)", aspect_ratio = :equal, clims=(-0.15,0.15));  
 
     T_title = @sprintf("Temperature");
     S_title = @sprintf("Salinity");

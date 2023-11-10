@@ -4,10 +4,6 @@
 using Printf
 using Oceananigans
 using Oceananigans.Units
-#=M² = 1e-7
-N² = 1e-4
-f = 1e-4
-simnum = 12=#
 global M²
 global N²
 global f
@@ -17,7 +13,6 @@ global simnum
 Nx = 64  # number of gridpoints in the x-direction
 Ny = 256  # number of gridpoints in the x-direction
 Nz = 32   # number of gridpoints in the z-direction
-Ly = 300kilometers  # size in the x-direction
 Lz = 50   # size in the vertical (z) direction 
 # set Lx later
 
@@ -31,32 +26,8 @@ S₀ = 20 # Reference salinity (units = g/kg)
 U = M²/f*Lz # reference velocity
 Ri = N²*f^2/(M²^2)  # Richardson number, must be below 1 for symmetric instability
 Lx = 2*pi*U/f*(2*(1+Ri)/5)^0.5*4  # choose domain size to fit 4 wavelengths of baroclinic instability
+Ly = Lx * 3
 k = 2*pi/(Lx/4) # wavenumber of instability
-
-
-
-
-
-
-
-#=
-
-
-
-Lx = Lx/10
-Ly = Ly/10
-
-
-
-
-=#
-
-
-
-
-
-
-
 
 
 
@@ -64,24 +35,18 @@ Ly = Ly/10
 # Some timestepping parameters
 growth = (54/5)^0.5*(1+Ri)^0.5/f # maximum allowable timestep 
 max_Δt = growth/25
-duration = growth*10 # The non-dimensional duration of the simulation
+duration = growth*15 # The non-dimensional duration of the simulation
 
 # Set the amplitude of the random perturbation (kick)
 kick = U/5  # random velocty perturbation
 
-#u_bcs = FieldBoundaryConditions(top = FluxBoundaryCondition(0),
-#                                bottom = FluxBoundaryCondition(0))
-#w_bcs = FieldBoundaryConditions(east = FluxBoundaryCondition(0),
-#                                west = FluxBoundaryCondition(0))
-#=T_bcs = FieldBoundaryConditions(top = GradientBoundaryCondition(N²/(g*α)),
-                                bottom = GradientBoundaryCondition(N²/(g*α)),
-                                north = FluxBoundaryCondition(0),
-                                south = FluxBoundaryCondition(0))
-S_bcs = FieldBoundaryConditions(top = FluxBoundaryCondition(0),
-                                bottom = FluxBoundaryCondition(0),
-                                north = GradientBoundaryCondition(M²/(g*β)),
-                                south = GradientBoundaryCondition(M²/(g*β)))=#
-T_bcs = FieldBoundaryConditions(top = FluxBoundaryCondition(0),
+u_bcs = FieldBoundaryConditions(top = GradientBoundaryCondition(M²/f),
+                                bottom = GradientBoundaryCondition(M²/f))
+T_bcs = FieldBoundaryConditions(top = GradientBoundaryCondition(N²/(g*α)),
+                                bottom = GradientBoundaryCondition(N²/(g*α)))
+S_bcs = FieldBoundaryConditions(north = GradientBoundaryCondition(M²/(g*β)),
+                                south = GradientBoundaryCondition(M²/(g*β)))
+#=T_bcs = FieldBoundaryConditions(top = FluxBoundaryCondition(0),
                                 bottom = FluxBoundaryCondition(0),
                                 north = FluxBoundaryCondition(0),
                                 south = FluxBoundaryCondition(0))
@@ -89,7 +54,7 @@ T_bcs = FieldBoundaryConditions(top = FluxBoundaryCondition(0),
 S_bcs = FieldBoundaryConditions(top = FluxBoundaryCondition(0),
                                 bottom = FluxBoundaryCondition(0),
                                 north = FluxBoundaryCondition(0),
-                                south = FluxBoundaryCondition(0))
+                                south = FluxBoundaryCondition(0))=#
 
 
 # construct a rectilinear grid using an inbuilt Oceananigans function
@@ -102,7 +67,7 @@ model = NonhydrostaticModel(; grid,
               advection = UpwindBiasedFifthOrder(),  # Specify the advection scheme.  Another good choice is WENO() which is more accurate but slower
             timestepper = :RungeKutta3, # Set the timestepping scheme, here 3rd order Runge-Kutta
                 tracers = (:T, :S),  # Set the name(s) of any tracers, here b is buoyancy and c is a passive tracer (e.g. dye)
-    boundary_conditions = (T = T_bcs, S = S_bcs),
+    boundary_conditions = (T = T_bcs, S = S_bcs, u=u_bcs),
                buoyancy = SeawaterBuoyancy(equation_of_state=LinearEquationOfState(thermal_expansion=α, haline_contraction=β)), # this tells the model that b will act as the buoyancy (and influence momentum) 
                coriolis = coriolis = FPlane(f=f), # this line tells the mdoel not to include system rotation (no Coriolis acceleration)
 )
@@ -126,7 +91,7 @@ simulation = Simulation(model, Δt = 1minute, stop_time = duration)
 # The TimeStepWizard manages the time-step adaptively, keeping the
 # Courant-Freidrichs-Lewy (CFL) number close to `1.0` while ensuring
 # the time-step does not increase beyond the maximum allowable value
-wizard = TimeStepWizard(cfl = 0.85, max_change = 1.1, max_Δt = max_Δt)
+wizard = TimeStepWizard(cfl = 0.2, max_change = 1.1, max_Δt = max_Δt)
 # A "Callback" pauses the simulation after a specified number of timesteps and calls a function (here the timestep wizard to update the timestep)
 # To update the timestep more or less often, change IterationInterval in the next line
 simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(1))
