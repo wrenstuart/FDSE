@@ -126,7 +126,7 @@ simulation.output_writers[:xz_slices] =
     JLD2OutputWriter(model, (; u, v, w, b, ζ, δ),
                             filename = filename * ".jld2",
                             indices = (:, 1, :),
-                            schedule = TimeInterval(1day),
+                            schedule = TimeInterval(τ/20),
                             overwrite_existing = true)
 
 # Set the name of the JLD2 output file
@@ -136,7 +136,7 @@ simulation.output_writers[:xy_slices] =
     JLD2OutputWriter(model, (; u, v, w, b, ζ, δ),
                             filename = filename * ".jld2",
                             indices = (:, :, Nz),
-                            schedule = TimeInterval(1day),
+                            schedule = TimeInterval(τ/20),
                             overwrite_existing = true)
 
 # Set the name of the JLD2 output file
