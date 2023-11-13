@@ -1,0 +1,1 @@
+This is for focusing on non-dimensionalising the problem and exploring the parameter space. We will focus on lower resolutions than in Project6, and work with periodic boundary conditions. Also plan to improve how some of the data are stored, including folders and better naming practises
