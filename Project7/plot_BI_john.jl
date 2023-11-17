@@ -4,9 +4,6 @@
 using Oceananigans, JLD2, Plots, Printf
 using Oceananigans.Units
 
-# Define some constants (these should match BI.jl)
-f = 1
-
 # Set the filename (without the extension)
 filename_xy = "Project7/raw-output/BI_xy"
 filename_xz = "Project7/raw-output/BI_xz"
