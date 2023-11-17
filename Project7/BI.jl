@@ -36,13 +36,11 @@ Lz = H                      # Vertical extent
 
 # Set some timestepping parameters
 max_Δt = T / 10
-duration = T * 30
-@info duration/1day
+duration = T * 40
+@printf("Simulation will last %s", prettytime(duration))
 
 # Set relative amplitude for random velocity perturbation
-kick = 0.1
-
-#=
+kick = 0.05
 
 # Define the background fields
 B₀(x, y, z, t) = M² * y + N² * z   # Buoyancy
@@ -109,31 +107,34 @@ v = model.velocities.v
 w = model.velocities.w
 b = Field(model.tracers.b + model.background_fields.tracers.b) # extract the buoyancy and add the background field
 
-ζ = ∂x(v) - ∂y(u) # The vertical vorticity
+ζ = ∂x(v) - ∂y(u)   # The vertical vorticity
+δ = ∂x(u) + ∂y(v)   # The horizontal divergence
 
-# Set the name of the output file
-filename = "Project7/raw-output_new/BI_xz"
+# Output the slice y =0
+filename = "Project7/raw-output/BI_xz"
 simulation.output_writers[:xz_slices] =
-    JLD2OutputWriter(model, (; u, v, w, b, ζ),
-                          filename = filename * ".jld2",
-                          indices = (:, 1, :),
-                         schedule = TimeInterval(T/20),
+    JLD2OutputWriter(model, (; u, v, w, b, ζ, δ),
+                            filename = filename * ".jld2",
+                            indices = (:, 1, :),
+                            schedule = TimeInterval(T/10),
                             overwrite_existing = true)
 
-filename = "Project7/raw-output_new/BI_xy"
+# Output the slice z = 0
+filename = "Project7/raw-output/BI_xy"
 simulation.output_writers[:xy_slices] =
-    JLD2OutputWriter(model, (; u, v, w, b, ζ),
-                          filename = filename * ".jld2",
-                          indices = (:, :, Nz),
-                        schedule = TimeInterval(T/20),
+    JLD2OutputWriter(model, (; u, v, w, b, ζ, δ),
+                            filename = filename * ".jld2",
+                            indices = (:, :, Nz),
+                            schedule = TimeInterval(T/10),
                             overwrite_existing = true)
 
-filename = "Project7/raw-output_new/BI_yz"
+# Output the slice x = 0
+filename = "Project7/raw-output/BI_yz"
 simulation.output_writers[:yz_slices] =
-    JLD2OutputWriter(model, (; u, v, w, b, ζ),
-                         filename = filename * ".jld2",
-                           indices = (1, :, :),
-                        schedule = TimeInterval(T/20),
+    JLD2OutputWriter(model, (; u, v, w, b, ζ, δ),
+                            filename = filename * ".jld2",
+                            indices = (1, :, :),
+                            schedule = TimeInterval(T/10),
                             overwrite_existing = true)
 
 nothing # hide
@@ -143,5 +144,3 @@ run!(simulation)
 
 # After the simulation is done, plot the results and save a movie
 include("plot_BI_john.jl")
-
-=#
