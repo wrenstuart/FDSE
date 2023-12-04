@@ -4,50 +4,69 @@
 using Printf
 using Oceananigans
 using Oceananigans.Units
+using Oceananigans.AbstractOperations
 
 include("plot_BI.jl")
 
-function run_BI_sim(Ri, λ, label)
+function run_BI_sim(Ri, α, label)
+
+# Ri = N²f²/M⁴ is the linear instability parameter
+# α = M²/N² is the slope of the isopycnals
+# label is a suffix for saving data from the simulations
 
 # Set the grid size
-Nx = 192  # number of gridpoints in the x-direction
-Ny = 192  # number of gridpoints in the x-direction
-Nz = 24   # number of gridpoints in the z-direction
+Nx = 128  # number of gridpoints in the x-direction
+Ny = 128  # number of gridpoints in the x-direction
+Nz = 16   # number of gridpoints in the z-direction
 
 # Set the two dimensional parameters
 H = 50    # Depth of mixed layer
 f = 1e-4  # Coriolis parameter
 
 # Calculate the other non-dimensional parameters
-α = Ri * λ^2    # N²/f²
-Ro = Ri^(-0.5)  # (initial) Rossby number
+s = α^2 / Ri        # N²/f²
+λ = α / Ri          # M²/f²
+Ro₀ = Ri ^ -0.5     # The initial Rossby number
 
 # Calculate the other dimensional parameters and scales
 M² = λ * f^2                # Horizontal buoyancy gradient
-N² = α * f^2                # Vertical buoyancy gradient
-L = λ * H * (1+Ri)^0.5      # Horizontal lengthscale (Rossby deformation radius)
+N² = s * f^2                # Vertical buoyancy gradient
+L = λ * H * (1+Ri) ^ 0.5    # Horizontal lengthscale (Rossby deformation radius)
 U = λ * f * H               # Velocity scale
-T = (1+Ri)^0.5 / f          # Timescale of growth (and expected timescale of later flow, if Ro ∼ Ri^(-0.5)
+T = (1+Ri) ^ 0.5 / f        # Timescale of growth (and expected timescale of later flow, if Ro ∼ Ri^(-0.5)
+
+@info M², N²
 
 # Set the domain size
 Lx = 4 * 2*pi * L * 0.4^0.5 # Zonal extent, set to 4 wavelengths of the most unstable mode
 Ly = (1+5^0.5)/2 * Lx       # Meridional extent, chosen to be an irrational multiple of Lx to avoid resonance
 Lz = H                      # Vertical extent
 
+# Now come up with a useful viscosity to use
+#=Lx_scale = 4 * 2*pi * s^0.5 * H * 0.4^0.5   # A horizontal lengthscale which only depends on the non-dimensional stratification (not Ri)
+ν_h = f * Lx_scale^2 / Nx^2                 # Horizontal viscosity
+ν_v = f * H^2 / Nz^2                        # Vertical viscosity=#
+ν_h = 1e-4
+ν_v = 1e-6
+diff_h = HorizontalScalarDiffusivity(ν = ν_h, κ = ν_h)
+diff_v = HorizontalScalarDiffusivity(ν = ν_v, κ = ν_v)
+@info ν_h
+@info ν_v
+
 # Set some timestepping parameters
-max_Δt = T / 10
-duration = T * 30
+max_Δt = minimum([T/10, 0.5 * pi / (N²^0.5)])
+duration = T * 40
 
 @info U, L, M², N²
 
 @printf("Simulation will last %s\n", prettytime(duration))
 
 # Set relative amplitude for random velocity perturbation
-kick = 0.05
+kick = 0.02 * H * f
 
 # Define the background fields
-B₀(x, y, z, t) = M² * y + N² * z   # Buoyancy
-U₀(x, y, z, t) = -M²/f * (z + Lz)  # Velocity (initialised in thermal wind balance)
+B₀(x, y, z, t) = M² * y + N² * z    # Buoyancy
+U₀(x, y, z, t) = -M²/f * (z + Lz)   # Zonal velocity
 B_field = BackgroundField(B₀)
 U_field = BackgroundField(U₀)
 
@@ -64,13 +83,14 @@ model = NonhydrostaticModel(; grid,
               tracers = :b,  # Set the name(s) of any tracers, here b is buoyancy and c is a passive tracer (e.g. dye)
               buoyancy = Buoyancy(model = BuoyancyTracer()), # this tells the model that b will act as the buoyancy (and influence momentum)
               background_fields = (b = B_field, u = U_field),
-              coriolis = coriolis = FPlane(f = f)
+              coriolis = coriolis = FPlane(f = f),
+              closure = (diff_h, diff_v)
 )
 
 # Set initial conditions, a random velocity perturbation
-uᵢ(x, y, z) = U * kick * randn()
-vᵢ(x, y, z) = U * kick * randn() 
-wᵢ(x, y, z) = U * kick * randn()
+uᵢ(x, y, z) = kick * randn()
+vᵢ(x, y, z) = kick * randn() 
+wᵢ(x, y, z) = kick * randn()
 bᵢ(x, y, z) = 0
 
 # Send the initial conditions to the model to initialize the variables
@@ -84,7 +104,7 @@ simulation = Simulation(model, Δt = max_Δt/10, stop_time = duration)
 # The TimeStepWizard manages the time-step adaptively, keeping the
 # Courant-Freidrichs-Lewy (CFL) number close to `1.0` while ensuring
 # the time-step does not increase beyond the maximum allowable value
-wizard = TimeStepWizard(cfl = 0.25, max_change = 1.1, max_Δt = max_Δt)
+wizard = TimeStepWizard(cfl = 0.5, max_change = 1.1, max_Δt = max_Δt)
 
 # Still some numerical noise at CFL 0.1 for Ri = 10⁴, but none for CFL = 0.05
 
@@ -108,16 +128,21 @@ simulation.callbacks[:progress] = Callback(progress, IterationInterval(10))
 
 # ### Output
 
-u = Field(model.velocities.u + model.background_fields.velocities.u) # unpack velocity `Field`s
+u = Field(model.velocities.u + model.background_fields.velocities.u)    # Unpack velocity `Field`s
 v = Field(model.velocities.v)
 w = Field(model.velocities.w)
-b = Field(model.tracers.b + model.background_fields.tracers.b) # extract the buoyancy and add the background field
+b = Field(model.tracers.b + model.background_fields.tracers.b)          # Extract the buoyancy and add the background field
+u_pert = Field(model.velocities.u)
+b_pert = Field(model.tracers.b)
+
 
 ζ = Field(∂x(v) - ∂y(u))   # The vertical vorticity
 δ = Field(∂x(u) + ∂y(v))   # The horizontal divergence
+#UnaryOperation()
+#ℬ = Field((w[1:Nx, 1:Ny, 1:Nz] + w[1:Nx, 1:Ny, 2:Nz+1]) / 2 .* b_pert)
 
 # Output the slice y = 0
-filename = "Project7/raw-output/BI_xz" * label
+filename = "Project8/raw-output/BI_xz" * label
 simulation.output_writers[:xz_slices] =
     JLD2OutputWriter(model, (; u, v, w, b, ζ, δ),
                             filename = filename * ".jld2",
@@ -126,7 +151,7 @@ simulation.output_writers[:xz_slices] =
                             overwrite_existing = true)
 
 # Output the slice z = 0
-filename = "Project7/raw-output/BI_xy" * label
+filename = "Project8/raw-output/BI_xy" * label
 simulation.output_writers[:xy_slices] =
     JLD2OutputWriter(model, (; u, v, w, b, ζ, δ),
                             filename = filename * ".jld2",
@@ -135,13 +160,24 @@ simulation.output_writers[:xy_slices] =
                             overwrite_existing = true)
 
 # Output the slice x = 0
-filename = "Project7/raw-output/BI_yz" * label
+filename = "Project8/raw-output/BI_yz" * label
 simulation.output_writers[:yz_slices] =
     JLD2OutputWriter(model, (; u, v, w, b, ζ, δ),
                             filename = filename * ".jld2",
                             indices = (1, :, :),
                             schedule = TimeInterval(T/10),
                             overwrite_existing = true)
+
+#=
+# Output the total vertical buoyancy flux
+filename = "Project8/raw-output/BI_ℬ" * label
+simulation.output_writers[:ℬ_flux] =
+    JLD2OutputWriter(model, (; ℬ),
+                            filename = filename * ".jld2",
+                            indices = (1, :, :),
+                            schedule = TimeInterval(T/10),
+                            overwrite_existing = true)
+=#
 
 nothing # hide
 
@@ -151,4 +187,5 @@ run!(simulation)
 # After the simulation is done, plot the results and save a movie
 
 BI_plot(label)
+
 end
