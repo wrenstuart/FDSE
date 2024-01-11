@@ -118,7 +118,7 @@ for i = 1 : length(Ris)
 
         for j = i - 2 : i + 2
         # CHANGE LINE BELOW IF CHANGE LINE ABOVE
-        time = iterations[j]
+        time = iterations[j+Int64(round(length(iterations)/2))]
         ζ_xy = file_xy["timeseries/ζ/$time"];
         δ_xy = file_xy["timeseries/δ/$time"];
         diff_ζ = 2 * ζ_lim / n_nodes
@@ -139,7 +139,6 @@ for i = 1 : length(Ris)
         end
 
         CairoMakie.heatmap!(x, y, -log.(1 .+ freq), colormap = :bilbao)
-
         vlines!(ax, 0, color = :black)
         hlines!(ax, 0, color = :black)
         hidespines!(ax)
@@ -152,7 +151,7 @@ for i = 1 : length(Ris)
         fix = "variable-axes"
     end
 
-    record(update_frame, f, "Project8/histograms/hist_" * fix * label * ".mp4", enumerate(iterations[3:1:end-3]); framerate=20)
+    record(update_frame, f, "Project8/histograms/hist_" * fix * label * ".mp4", enumerate(iterations[3+Int64(round(length(iterations)/2)):1:end-3]); framerate = 20)
 
     close(file_xy)
     nothing

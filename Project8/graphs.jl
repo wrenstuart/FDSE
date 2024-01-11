@@ -115,6 +115,11 @@ log_α = [2]                # For s
 
 include("BI.jl")
 
+Ro = log_Ri * 0;
+δ_on_f = log_Ri * 0;
+ζ_skew_of_Ri = log_Ri * 0;
+δ_skew_of_Ri = log_Ri * 0;
+
 f = 1e-4
 #i_break = 0
 for i₁ = 1 : length(log_Ri)
@@ -138,16 +143,7 @@ for i₁ = 1 : length(log_Ri)
         Plots.plot!(t, ℬ_mean/maximum(ℬ_mean))
         Plots.plot!(t, ζ_skew)
         Plots.plot!(t, δ_skew/maximum(-δ_skew))
-        #Plots.plot!(t, δ_skew)
         display(plt)
-        #=global i_break = length(t)
-        for i = Int64(round(length(t)/2)) : length(t)
-            if ζ_skew[i] < ζ_skew[i-1]
-                global i_break = i-1
-                @info i_break
-                break
-            end
-        end=#
 
         ζ_max_skew = maximum(ζ_skew)
         if Ri_label > 2
@@ -163,33 +159,56 @@ for i₁ = 1 : length(log_Ri)
         #@info i_break, t[i_break]
         filename_xy = "Project8/raw-output/BI_xy" * label
         file_xy = jldopen(filename_xy * ".jld2")
-        ζ_ic = FieldTimeSeries(filename_xy * ".jld2", "ζ", iterations = 0)
-        δ_ic = FieldTimeSeries(filename_xy * ".jld2", "δ", iterations = 0)
         iterations = parse.(Int, keys(file_xy["timeseries/t"]))
         
         iter = iterations[i_break]
-        xζ, yζ, zζ = nodes(ζ_ic)
-        xδ, yδ, zδ = nodes(δ_ic)
         δ_xy = file_xy["timeseries/δ/$iter"][:, :, 1];
         ζ_xy = file_xy["timeseries/ζ/$iter"][:, :, 1];
-        mean_δ = sum(δ_xy) / (length(xδ) * length(yδ))
-        mean_ζ = sum(ζ_xy) / (length(xζ) * length(yζ))
         δ_scale = δ_var[i_break] ^ 0.5
         ζ_scale = ζ_var[i_break] ^ 0.5
-        mean_δ³ = sum((δ_xy .- mean_δ) .^ 3) / (length(xδ) * length(yδ))
-        mean_ζ³ = sum((ζ_xy .- mean_ζ) .^ 3) / (length(xζ) * length(yζ))
-        skew_δ = mean_δ³ / (δ_scale ^ 3)
-        skew_ζ = mean_ζ³ / (ζ_scale ^ 3)
-        @info Ri_label, skew_ζ, skew_δ
+        @info Ri_label, ζ_skew[i_break], δ_skew[i_break]
         plt = Plots.scatter(ζ_xy/f, δ_xy/f, primary = false, markeralpha = 0.01, markerstrokewidth = 0, color = :black, xlims = (-5*ζ_scale/f, 5*ζ_scale/f), ylims = (-5*δ_scale/f, 5*δ_scale/f))
-        #plt = scatter(ζ_xy/f, δ_xy/f, primary = false, markeralpha = 0.02, markerstrokewidth = 0, color = :black, xlims = (-5, 5), ylims = (-5, 5), framestyle = :origin)
         Plots.plot!([-1, -1], [-5, 5], linestyle = :dash, color = :red, legend = false)
-        xlabel!("\$ζ/f\$")
-        ylabel!("\$δ/f\$")
+        Plots.xlabel!("\$ζ/f\$")
+        Plots.ylabel!("\$δ/f\$")
         title!("\$\\mathrm{Ri}=" * string(round(10^Ri_label, sigdigits = 3)) * "\$")
-        annotate!(3.5*ζ_scale*1e4, 3.5*δ_scale*1e4, "\$\\tilde\\mu_{3,\\zeta}=" * string(round(10^skew_δ, sigdigits = 3)) * "\$\n\$\\tilde\\mu_{3,\\delta}=" * string(round(10^skew_δ, sigdigits = 3)) * "\$")
+        annotate!(2*ζ_scale*1e4, 2*δ_scale*1e4, "\$\\tilde\\mu_{3,\\zeta}=" * string(round(ζ_skew[i_break], sigdigits = 3)) * "\$\n\$\\tilde\\mu_{3,\\delta}=" * string(round(δ_skew[i_break], sigdigits = 3)) * "\$", :left)
         display(plt)
+        savefig("Project8/graphs/snapshot" * label * ".png")
         
+        Ro[i₁] = ζ_scale * 1e4
+        δ_on_f[i₁] = δ_scale * 1e4
+        ζ_skew_of_Ri[i₁] = ζ_skew[i_break]
+        δ_skew_of_Ri[i₁] = δ_skew[i_break]
+
     end
 end
 
+Ri = 10 .^ log_Ri
+plt = Plots.plot(log10.(1 .+ Ri), log10.(Ro))
+Plots.plot!([0, 4], [0.1, -0.9], linestyle = :dash, color = :black, legend = false)
+Plots.xlabel!("\$\\log(1+\\mathrm{Ri})\$")
+Plots.ylabel!("\$\\log(\\mathrm{Ro})\$")
+display(plt)
+savefig("Project8/graphs/ζ_Ri.png")
+plt = Plots.plot(log10.(1 .+ Ri), log10.(δ_on_f))
+Plots.plot!([0, 4], [-0.2, -2.2], linestyle = :dash, color = :black, legend = false)
+Plots.xlabel!("\$\\log(1+\\mathrm{Ri})\$")
+Plots.ylabel!("\$\\frac{1}{2}\\log(\\langle\\delta^2\\rangle/f^2)\$")
+display(plt)
+savefig("Project8/graphs/δ_Ri.png")
+plt = Plots.plot(log10.(1 .+ Ri), log10.(Ro ./ δ_on_f), aspect_ratio = :equal)
+Plots.plot!([0, 4], [0.3, 1.3], linestyle = :dash, color = :black, legend = false)
+Plots.xlabel!("\$\\log(1+\\mathrm{Ri})\$")
+Plots.ylabel!("\$\\frac{1}{2}\\log(\\langle\\zeta^2\\rangle/\\langle\\delta^2\\rangle)\$")
+display(plt)
+savefig("Project8/graphs/ζ-on-δ_Ri.png")
+plt = Plots.plot(log10.(1 .+ Ri), ζ_skew_of_Ri, legend = false)
+Plots.xlabel!("\$\\log(1+\\mathrm{Ri})\$")
+Plots.ylabel!("\$\\tilde\\mu_{3,\\zeta}\$")
+display(plt)
+savefig("Project8/graphs/ζ-skew_Ri.png")
+plt = Plots.plot(log10.(1 .+ Ri), δ_skew_of_Ri, legend = false)
+Plots.xlabel!("\$\\log(1+\\mathrm{Ri})\$")
+Plots.ylabel!("\$\\tilde\\mu_{3,\\delta}\$")
+display(plt)

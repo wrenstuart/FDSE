@@ -72,7 +72,7 @@ end
 @info frame_ℬ_mean_max, frame_ℬ_mean_max/800
 
 # Here, we loop over all iterations
-anim = @animate for (i, iter) in enumerate(iterations)
+anim = @animate for (i, iter) in enumerate(iterations[Int64(round(length(iterations)*0.4)) : length(iterations)])
 
     #@info "Drawing frame $i from iteration $iter..."
 
@@ -88,9 +88,9 @@ anim = @animate for (i, iter) in enumerate(iterations)
     # Save some variables to plot at the end
     t_save[i] = t # save the time
 
-        δ_xy_plot = Plots.heatmap(xδ/1kilometer, yδ/1kilometer, δ_xy'/f; color = :balance, xlabel = "x (km)", ylabel = "y (km)", clims=(-ζ_max/f, ζ_max/f));  
-        ζ_xy_plot = Plots.heatmap(xζ/1kilometer, yζ/1kilometer, ζ_xy'/f; color = :balance, xlabel = "x (km)", ylabel = "y (km)", clims=(-ζ_max/f, ζ_max/f));  
-        ℬ_xy_plot = Plots.heatmap(xℬ/1kilometer, yℬ/1kilometer, ℬ_xy'; color = :balance, xlabel = "x (km)", ylabel = "y (km)", clims=(-ℬ_max, ℬ_max));  
+        δ_xy_plot = Plots.heatmap(xδ/1kilometer, yδ/1kilometer, δ_xy'/f; color = :balance, xlabel = "\$x/\\mathrm{km}\$", ylabel = "\$y/\\mathrm{km}\$", clims=(-ζ_max/f, ζ_max/f));  
+        ζ_xy_plot = Plots.heatmap(xζ/1kilometer, yζ/1kilometer, ζ_xy'/f; color = :balance, xlabel = "\$x/\\mathrm{km}\$", ylabel = "\$y/\\mathrm{km}\$", clims=(-ζ_max/f, ζ_max/f));  
+        ℬ_xy_plot = Plots.heatmap(xℬ/1kilometer, yℬ/1kilometer, ℬ_xy'; color = :balance, xlabel = "\$x/\\mathrm{km}\$", ylabel = "\$y/\\mathrm{km}\$", clims=(-ℬ_max, ℬ_max));  
 
         #ζ_yz_plot = heatmap(yζ/1kilometer, zζ, ζ_yz'/f; color = :balance, xlabel = "y (km)", ylabel = "z (m)", clims=(-3,3));
         #ζ_yz_plot = heatmap(yζ/1kilometer, zζ, ζ_yz'/f.*20, clims=(-21,21), color = :balance);
@@ -98,13 +98,14 @@ anim = @animate for (i, iter) in enumerate(iterations)
         #δ_yz_plot = heatmap(yδ/1kilometer, zδ, δ_yz', color = :haline);
         #contour!(yδ/1kilometer, zδ, δ_yz')#, levels=LinRange(20,20.6,50), color = :black)
 
-    δ_title = @sprintf("δ/f");
-    ζ_title = @sprintf("ζ/f");
-    ℬ_title = @sprintf("Buoyancy flux ℬ")
+    δ_title = @sprintf("\$δ/f\$");
+    ζ_title = @sprintf("\$ζ/f\$");
+    #ℬ_title = @sprintf("Buoyancy flux ℬ")
 
     # Combine the sub-plots into a single figure
-    Plots.plot(δ_xy_plot, ζ_xy_plot, ℬ_xy_plot, layout = (1, 3),# size = (1402, 600),
-    title = [δ_title ζ_title ℬ_title])
+    Plots.plot(δ_xy_plot, ζ_xy_plot,# ℬ_xy_plot,
+    layout = (1, 2),# size = (1402, 600),
+    title = [δ_title ζ_title], aspect_ratio = :equal)
     #plot(b_yz_plot, size=(802,200))
 
     iter == iterations[end] && close(file_xz)
@@ -114,6 +115,6 @@ close(file_xy)
 close(file_yz)
 
 # Save the animation to a file
-mp4(anim, "Project8/videos/BI" * label * ".mp4", fps = 20) # hide
+mp4(anim, "Project8/videos/BI-short" * label * ".mp4", fps = 20) # hide
 
 end
