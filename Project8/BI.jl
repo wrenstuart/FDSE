@@ -136,10 +136,9 @@ u_pert = Field(model.velocities.u)
 b_pert = Field(model.tracers.b)
 
 
-ζ = Field(∂x(v) - ∂y(u))   # The vertical vorticity
-δ = Field(∂x(u) + ∂y(v))   # The horizontal divergence
-#UnaryOperation()
-#ℬ = Field((w[1:Nx, 1:Ny, 1:Nz] + w[1:Nx, 1:Ny, 2:Nz+1]) / 2 .* b_pert)
+ζ = Field(∂x(v) - ∂y(u))    # The vertical vorticity
+δ = Field(∂x(u) + ∂y(v))    # The horizontal divergence
+ℬ = Field(w * b_pert)       # The buoyancy flux
 
 # Output the slice y = 0
 filename = "Project8/raw-output/BI_xz" * label
@@ -147,7 +146,7 @@ simulation.output_writers[:xz_slices] =
     JLD2OutputWriter(model, (; u, v, w, b, ζ, δ),
                             filename = filename * ".jld2",
                             indices = (:, 1, :),
-                            schedule = TimeInterval(T/10),
+                            schedule = TimeInterval(T/20),
                             overwrite_existing = true)
 
 # Output the slice z = 0
@@ -156,7 +155,7 @@ simulation.output_writers[:xy_slices] =
     JLD2OutputWriter(model, (; u, v, w, b, ζ, δ),
                             filename = filename * ".jld2",
                             indices = (:, :, Nz),
-                            schedule = TimeInterval(T/10),
+                            schedule = TimeInterval(T/20),
                             overwrite_existing = true)
 
 # Output the slice x = 0
@@ -165,19 +164,18 @@ simulation.output_writers[:yz_slices] =
     JLD2OutputWriter(model, (; u, v, w, b, ζ, δ),
                             filename = filename * ".jld2",
                             indices = (1, :, :),
-                            schedule = TimeInterval(T/10),
+                            schedule = TimeInterval(T/20),
                             overwrite_existing = true)
 
-#=
 # Output the total vertical buoyancy flux
 filename = "Project8/raw-output/BI_ℬ" * label
 simulation.output_writers[:ℬ_flux] =
     JLD2OutputWriter(model, (; ℬ),
                             filename = filename * ".jld2",
-                            indices = (1, :, :),
-                            schedule = TimeInterval(T/10),
+                            indices = (:, :, Int64(round((Nz+1)/2))),
+                            schedule = TimeInterval(T/20),
                             overwrite_existing = true)
-=#
+
 
 nothing # hide
 

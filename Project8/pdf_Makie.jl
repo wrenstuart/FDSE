@@ -25,18 +25,16 @@ filename = pre * "_Ri_" * string(log_Ri) * "_α_" * string(α)
 u_ic = FieldTimeSeries(filename * ".jld2", "u", iterations = 0)
 v_ic = FieldTimeSeries(filename * ".jld2", "v", iterations = 0)
 w_ic = FieldTimeSeries(filename * ".jld2", "w", iterations = 0)
-#T_ic = FieldTimeSeries(filename * ".jld2", "T", iterations = 0)
-#S_ic = FieldTimeSeries(filename * ".jld2", "S", iterations = 0)
 ζ_ic = FieldTimeSeries(filename * ".jld2", "ζ", iterations = 0)
+δ_ic = FieldTimeSeries(filename * ".jld2", "δ", iterations = 0)
 
 ## Load in coordinate arrays
 ## We do this separately for each variable since Oceananigans uses a staggered grid
 xu, yu, zu = nodes(u_ic)
 xv, yv, zv = nodes(v_ic)
 xw, yw, zw = nodes(w_ic)
-#xT, yT, zT = nodes(T_ic)
-#xS, yS, zS = nodes(S_ic)
 xζ, yζ, zζ = nodes(ζ_ic)
+xδ, yδ, zδ = nodes(δ_ic)
 
 ## Now, open the file with our data
 file_xy = jldopen(filename * ".jld2")
@@ -81,43 +79,6 @@ end
 
 record(update_frame, f, "Project8/" * "hist_Ri_" * string(log_Ri) * "_α_" * string(α) * ".mp4", enumerate(iterations[1:1:end]); framerate=20)
 
-#=
-# Here, we loop over all iterations
-anim = @animate for (i, iter) in enumerate(iterations)
-
-    @info "Drawing frame $i from iteration $iter..."
-
-    u_xz = file_xz["timeseries/u/$iter"][:, 1, :];
-    v_xz = file_xz["timeseries/v/$iter"][:, 1, :];
-    w_xz = file_xz["timeseries/w/$iter"][:, 1, :];
-    b_xz = file_xz["timeseries/b/$iter"][:, 1, :];
-    ω_xz = file_xz["timeseries/ω/$iter"][:, 1, :];
-    χ_xz = file_xz["timeseries/χ/$iter"][:, 1, :];
-    ϵ_xz = file_xz["timeseries/ϵ/$iter"][:, 1, :];
-
-    t = file_xz["timeseries/t/$iter"];
-
-        b_xz_plot = heatmap(xb, zb, b_xz'; color = :thermal, xlabel = "x", ylabel = "z", aspect_ratio = :equal, xlims = (0, Lx), ylims = (0, Lz)); 
-        ω_xz_plot = heatmap(xω, zω, ω_xz'; color = :thermal, xlabel = "x", ylabel = "z", aspect_ratio = :equal, xlims = (0, Lx), ylims = (0, Lz)); 
-        χ_xz_plot = heatmap(xχ, zχ, χ_xz'; color = :thermal, xlabel = "x", ylabel = "z", aspect_ratio = :equal, xlims = (0, Lx), ylims = (0, Lz)); 
-        ϵ_xz_plot = heatmap(xϵ, zϵ, ϵ_xz'; color = :thermal, xlabel = "x", ylabel = "z", aspect_ratio = :equal, xlims = (0, Lx), ylims = (0, Lz)); 
-
-    u_title = @sprintf("u, t = %s", round(t));
-    v_title = @sprintf("v, t = %s", round(t));
-    w_title = @sprintf("w, t = %s", round(t));
-    b_title = @sprintf("b, t = %s", round(t));
-    ω_title = @sprintf("vorticity (ω), t = %s", round(t));
-    ϵ_title = @sprintf("KE dissipation (ϵ), t = %s", round(t));
-    χ_title = @sprintf("buoyancy variance dissipation (χ), t = %s", round(t));
-
-# Combine the sub-plots into a single figure
-    plot(b_xz_plot, ω_xz_plot, ϵ_xz_plot, χ_xz_plot, layout = (4, 1), size = (1200, 800),
-    title = [b_title ω_title ϵ_title χ_title])
-
-    iter == iterations[end] && close(file_xz)
-end
-
-=#
 close(file_xy)
 nothing
 

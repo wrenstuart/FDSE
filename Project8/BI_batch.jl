@@ -1,5 +1,5 @@
 # Set orders of magnitude for Richardson numbers Ri and vertical shear parameters λ
-log_Ri = [0, 1, 2, 3]    # For Ri
+log_Ri = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4]    # For Ri
 log_α = [2]                # For s
 
 include("BI.jl")
